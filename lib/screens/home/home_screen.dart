@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:note_plus/components/floating_button/floating_action_button.dart';
 import 'package:note_plus/components/text_input/text_input.dart';
 import 'package:note_plus/components/todo/todo.dart';
-import 'package:note_plus/utils/data/local_storage.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,16 +14,16 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _todoTitleController = TextEditingController();
   final TextEditingController _todoContentController = TextEditingController();
 
-  final _box = Hive.box('todosDB');
-  LocalStorage storage = LocalStorage();
+  List<Todo> _todos = [];
 
   // first app initial launch state
   @override
   void initState() {
-    if (_box.get('TODOLIST') == null) {
-      storage.createInitialDataOnAppFirstLoad();
-    } else {
-      storage.getTodos();
+    if (_todos.isEmpty) {
+      _todos = [
+        Todo(title: 'Welcome to To-do+', content: 'Create awesome todo\'s', isCompleted: false, toggleCheckbox: null, removeTodoItem: null,),
+        Todo(title: 'Get started', content: 'Click the + button below', isCompleted: false, toggleCheckbox: null, removeTodoItem: null,),
+      ];
     }
     super.initState();
   }
@@ -40,9 +38,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void toggleTodo(bool? value, index) {
     setState(() {
-      storage.todos[index].isCompleted = !storage.todos[index].isCompleted;
+      _todos[index].isCompleted = !_todos[index].isCompleted;
     });
-    storage.updateTodos();
   }
 
   void closeModalBottomSheet() {
@@ -52,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void saveTodoItem() {
     if (_todoContentController.text.isNotEmpty) {
       setState(() {
-        storage.todos.add(Todo(
+        _todos.add(Todo(
           title: _todoTitleController.text,
           content: _todoContentController.text,
           isCompleted: false,
@@ -60,7 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
           removeTodoItem: null,
         ));
       });
-      storage.updateTodos();
       _todoTitleController.text = '';
       _todoContentController.text = '';
       Navigator.pop(context);
@@ -71,9 +67,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void deleteTodoItem(index) {
     setState(() {
-      storage.todos.removeAt(index);
+      _todos.removeAt(index);
     });
-    storage.updateTodos();
   }
 
   void addTodoItem() {
@@ -185,12 +180,12 @@ class _HomeScreenState extends State<HomeScreen> {
             // display all the local storage todos here
             Expanded(
               child: ListView.builder(
-                itemCount: storage.todos.length,
+                itemCount: _todos.length,
                 itemBuilder: (context, index) {
                   return Todo(
-                    title: storage.todos[index].title,
-                    content: storage.todos[index].content,
-                    isCompleted: storage.todos[index].isCompleted,
+                    title: _todos[index].title,
+                    content: _todos[index].content,
+                    isCompleted: _todos[index].isCompleted,
                     toggleCheckbox: (value) => toggleTodo(value, index),
                     removeTodoItem: (context) => deleteTodoItem(index),
                   );
