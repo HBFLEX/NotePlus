@@ -4,14 +4,14 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 
 
 // ignore: must_be_immutable
-class Todo extends StatelessWidget {
+class TodoCard extends StatelessWidget {
   String title;
   String content;
   bool isCompleted;
   void Function(bool?)? toggleCheckbox;
   void Function(BuildContext)? removeTodoItem;
 
-  Todo({
+  TodoCard({
     super.key,
     required this.title,
     required this.content,

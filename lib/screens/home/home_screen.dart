@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:note_plus/components/floating_button/floating_action_button.dart';
 import 'package:note_plus/components/text_input/text_input.dart';
 import 'package:note_plus/components/todo/todo.dart';
+import 'package:note_plus/models/models.dart';
+import 'package:note_plus/object_box.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,18 +16,21 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _todoTitleController = TextEditingController();
   final TextEditingController _todoContentController = TextEditingController();
 
-  List<Todo> _todos = [];
+  late ObjectBox objectBox;
+  late Stream<List<Todo>> _todos;
 
   // first app initial launch state
   @override
   void initState() {
-    if (_todos.isEmpty) {
-      _todos = [
-        Todo(title: 'Welcome to To-do+', content: 'Create awesome todo\'s', isCompleted: false, toggleCheckbox: null, removeTodoItem: null,),
-        Todo(title: 'Get started', content: 'Click the + button below', isCompleted: false, toggleCheckbox: null, removeTodoItem: null,),
-      ];
-    }
     super.initState();
+    _initObjectBox();
+  }
+
+  Future<void> _initObjectBox() async {
+    objectBox = await ObjectBox.init(); // Ensure this method initializes ObjectBox properly.
+    setState(() {
+      _todos = objectBox.getAllTodos();
+    });
   }
 
   // dispose text editing controllers
@@ -36,11 +41,11 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  void toggleTodo(bool? value, index) {
-    setState(() {
-      _todos[index].isCompleted = !_todos[index].isCompleted;
-    });
-  }
+  // void toggleTodo(bool? value, index) {
+  //   setState(() {
+  //     _todos[index].isCompleted = !_todos[index].isCompleted;
+  //   });
+  // }
 
   void closeModalBottomSheet() {
     Navigator.pop(context);
@@ -49,13 +54,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void saveTodoItem() {
     if (_todoContentController.text.isNotEmpty) {
       setState(() {
-        _todos.add(Todo(
+        Todo todo = Todo(
           title: _todoTitleController.text,
           content: _todoContentController.text,
           isCompleted: false,
-          toggleCheckbox: null,
-          removeTodoItem: null,
-        ));
+        );
+        objectBox.insertTodo(todo);
       });
       _todoTitleController.text = '';
       _todoContentController.text = '';
@@ -65,11 +69,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void deleteTodoItem(index) {
-    setState(() {
-      _todos.removeAt(index);
-    });
-  }
+  // void deleteTodoItem(index) {
+  //   setState(() {
+  //     _todos.removeAt(index);
+  //   });
+  // }
 
   void addTodoItem() {
     // display the alert dialog
@@ -179,17 +183,33 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             // display all the local storage todos here
             Expanded(
-              child: ListView.builder(
-                itemCount: _todos.length,
-                itemBuilder: (context, index) {
-                  return Todo(
-                    title: _todos[index].title,
-                    content: _todos[index].content,
-                    isCompleted: _todos[index].isCompleted,
-                    toggleCheckbox: (value) => toggleTodo(value, index),
-                    removeTodoItem: (context) => deleteTodoItem(index),
+              child: StreamBuilder<List<Todo>>(
+                stream: _todos,
+                builder: (context, snapshot) {
+                  if(!snapshot.hasData){
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  else{
+                    final todos = snapshot.data!;
+                    return ListView.builder(
+                    itemCount: todos.length,
+                    itemBuilder: (context, index) {
+                      return TodoCard(
+                        title: todos[index].title,
+                        content: todos[index].content,
+                        isCompleted: todos[index].isCompleted,
+                        toggleCheckbox: (value){
+                          todos[index].isCompleted = !todos[index].isCompleted;
+                          objectBox.insertTodo(todos[index]);
+                        },
+                        removeTodoItem: (context) =>{
+                          objectBox.deleteTodo(todos[index].id)
+                        },
+                      );
+                    },
                   );
-                },
+                  }
+                }
               ),
             ),
           ],
