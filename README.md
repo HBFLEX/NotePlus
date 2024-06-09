@@ -1,3 +1,3 @@
-# note_plus
+# NotePlus+
 
-A new Flutter project.
+A comprehensive notepad + todo mobile app.
